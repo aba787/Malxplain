@@ -1,0 +1,65 @@
+قائمة قبول (Acceptance Criteria) — لازم يحققها
+
+Structure & Install
+
+يحتوي الريبو على requirements.txt أو pyproject.toml.
+
+يوجد README واضح بخطوات: venv/install، وكيف تشغل السيرفر، وكيف تشغل تدريب النماذج.
+
+أمر واحد لتشغيل الويب محليًا (مثلاً python main.py أو flask run).
+
+Static Analysis
+
+دالة static_analysis.extract(path) تعيد dict بالحقول: sha256, size, entropy, imports[], sections[], strings_sample[].
+
+وحدة مكتوبة ومختبرة على ملف exe dummy (تستعمل ملف non-malicious للـ demo).
+
+Dynamic Analysis
+
+دالة dynamic_analysis.parse_anyrun(json_path) تقرأ تقرير Any.Run (أو summary HTML) وتعيد dict مثل: network_count, processes_created, files_created, registry_changes.
+
+إذا تقرير Any.Run غير متوفر، يقبل ملخص الـAI ويخرج نفس الحقول من النص (simple NLP extraction).
+
+Feature Engineering
+
+سكربت/دالة feature_engineering.merge(static, dynamic) تنتج row جاهز للـ ML (json/csv).
+
+مثال إخراج: {"sha256":..., "entropy":..., "network_count":..., "process_count":..., ...}
+
+Model Training
+
+سكربت train_models.py يقبل مسار CSV ويطبّع، يدرّب RF, SVM, ANN، ويخزن النماذج في models/ كـ .pkl أو .pt.
+
+ينتج تقرير evaluation (accuracy, confusion matrix, classification_report) محفوظ في reports/metrics.json و صورة مخطط reports/accuracy.png.
+
+Prediction Engine / API
+
+endpoint HTTP POST /analyze يقبل ملف أو hash -> يُعيد JSON تقرير فوري مع:
+
+{
+  "analysis_id": "...",
+  "sha256": "...",
+  "prediction": "malicious",
+  "confidence": 0.92,
+  "top_features": {"entropy":0.23,"network_count":5,...},
+  "explanation": "Because the sample created files in %SystemRoot% and contacted suspicious IPs."
+}
+
+
+endpoint GET /report/<analysis_id> يعيد full JSON report الموجود في reports/.
+
+Educational Explanation
+
+educational_interface يولّد جملة تفسيرية مبسطة (3 جمل كحد أقصى) تشرح لماذا التصنيف حصل (map من الميزات إلى نصوص جاهزة).
+
+UI
+
+صفحة upload تعمل وتعرض النتيجة + زر لتحميل JSON report.
+
+صفحة explanation تعرض الشرح وملخص الـfeatures.
+
+Security & Testing
+
+لا تشغيل EXE على الجهاز الأساسي — إذا عمل dynamic execution لازم تكون محاكاة أو استخدام تقارير JSON فقط.
+
+ملف tests/ فيه 3 اختبارات بسيطة (unit tests) لتشغيل static parse على sample، parse_anyrun على sample summary، وتشغيل predict على نموذج محمّل.

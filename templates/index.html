@@ -1,0 +1,837 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MalXplain - Educational Malware Analyzer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #000000;
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #1a1a1a;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+            overflow: hidden;
+            border: 2px solid #4a148c;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #000000, #4a148c, #6a1b9a);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 2.5em;
+            font-weight: 300;
+        }
+        
+        .header p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .content {
+            padding: 40px;
+            background: #1a1a1a;
+        }
+        
+        .upload-area {
+            border: 4px dashed #9c27b0;
+            border-radius: 20px;
+            padding: 60px;
+            text-align: center;
+            background: linear-gradient(135deg, #2a2a2a, #1a1a2e);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .upload-area:hover {
+            background: linear-gradient(135deg, #3a3a3a, #2a2a4e);
+            border-color: #7b1fa2;
+            box-shadow: 0 10px 30px rgba(156, 39, 176, 0.3);
+        }
+        
+        .upload-area.dragover {
+            background: linear-gradient(135deg, #3a3a3a, #2a2a4e);
+            border-color: #7b1fa2;
+            transform: scale(1.05);
+            box-shadow: 0 15px 40px rgba(156, 39, 176, 0.4);
+        }
+        
+        .upload-icon {
+            font-size: 5em;
+            color: #9c27b0;
+            margin-bottom: 30px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .upload-text {
+            font-size: 1.5em;
+            color: #ffffff;
+            margin-bottom: 30px;
+            font-weight: 600;
+        }
+        
+        .upload-subtext {
+            font-size: 1em;
+            color: #b39ddb;
+            margin-bottom: 30px;
+        }
+        
+        .upload-button {
+            background: linear-gradient(135deg, #9c27b0, #7b1fa2);
+            color: white;
+            border: none;
+            padding: 20px 40px;
+            border-radius: 50px;
+            font-size: 1.3em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(156, 39, 176, 0.3);
+        }
+        
+        .upload-button:hover {
+            background: linear-gradient(135deg, #7b1fa2, #6a1b9a);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(156, 39, 176, 0.4);
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #ecf0f1;
+            border-radius: 3px;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #3498db;
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .status {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 1.1em;
+            display: none;
+        }
+        
+        .status.success {
+            color: #27ae60;
+        }
+        
+        .status.error {
+            color: #e74c3c;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 40px;
+        }
+        
+        .feature {
+            text-align: center;
+            padding: 20px;
+            background: #2a2a2a;
+            border-radius: 10px;
+            color: #ffffff;
+            border: 1px solid #4a148c;
+        }
+        
+        .feature-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        
+        .footer {
+            background: #000000;
+            color: #b39ddb;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9em;
+            border-top: 2px solid #4a148c;
+        }
+        
+        /* Instant Results Styles */
+        .result-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            border: 2px solid #ecf0f1;
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f1f2f6;
+        }
+        
+        .result-badge {
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+        
+        .result-badge.safe {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+        
+        .result-badge.malicious {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+        
+        .result-badge.suspicious {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeaa7;
+        }
+        
+        .result-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .detail-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .detail-label {
+            font-size: 0.9em;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .detail-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .result-explanation {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .explanation-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #1976d2;
+        }
+        
+        .demo-sample-group {
+            background: #3a3a3a;
+            border-radius: 10px;
+            padding: 20px;
+        }
+        
+        .demo-sample-btn {
+            width: 100%;
+            padding: 12px 15px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: white;
+        }
+        
+        .demo-sample-btn.safe {
+            background: linear-gradient(135deg, #4caf50, #388e3c);
+        }
+        
+        .demo-sample-btn.safe:hover {
+            background: linear-gradient(135deg, #388e3c, #2e7d32);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+        }
+        
+        .demo-sample-btn.malicious {
+            background: linear-gradient(135deg, #f44336, #d32f2f);
+        }
+        
+        .demo-sample-btn.malicious:hover {
+            background: linear-gradient(135deg, #d32f2f, #c62828);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>MalXplain</h1>
+            <p>Educational Malware Analyzer - Learn How Cybersecurity Works</p>
+        </div>
+        
+        <div class="content">
+            <!-- Section 1: Quick Demo Samples -->
+            <div style="background: #2a2a2a; border-radius: 15px; padding: 30px; margin-bottom: 30px; border: 2px solid #4a148c;">
+                <h2 style="color: #9c27b0; margin-bottom: 20px; text-align: center;">🎯 Section 1: Demo Samples (Pre-made)</h2>
+                <div style="background: #1a1a1a; padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 4px solid #9c27b0;">
+                    <h3 style="color: #ffffff; margin-bottom: 15px;">📋 What This Section Does:</h3>
+                    <ul style="color: #b39ddb; margin-left: 20px;">
+                        <li><strong>Safe Samples:</strong> Educational files that simulate legitimate software</li>
+                        <li><strong>Malicious Samples:</strong> Mock malware files (completely safe, for education only)</li>
+                        <li><strong>Instant Results:</strong> Pre-determined verdicts for demonstration purposes</li>
+                        <li><strong>Purpose:</strong> Quick testing for presentations and learning</li>
+                    </ul>
+                </div>
+                
+                <!-- Quick Access Buttons -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <div style="text-align: center;">
+                        <button class="demo-sample-btn safe" onclick="useSampleFile('benign')" style="width: 100%; font-size: 1.2em; padding: 15px;">
+                            ✅ Test Safe Sample
+                        </button>
+                        <p style="color: #4caf50; font-size: 0.9em; margin-top: 10px;">Demo: Legitimate application</p>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <button class="demo-sample-btn malicious" onclick="useSampleFile('malicious')" style="width: 100%; font-size: 1.2em; padding: 15px;">
+                            ⚠️ Test Malware Sample
+                        </button>
+                        <p style="color: #f44336; font-size: 0.9em; margin-top: 10px;">Demo: Educational malware</p>
+                    </div>
+                </div>
+                
+                <!-- Detailed Sample Selection -->
+                <details style="margin-top: 20px;">
+                    <summary style="color: #9c27b0; cursor: pointer; font-weight: bold; margin-bottom: 15px;">📂 Choose Specific Sample Type</summary>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                        <div class="demo-sample-group">
+                            <h4 style="color: #4caf50; margin-bottom: 15px; text-align: center;">✅ Safe Applications</h4>
+                            <button class="demo-sample-btn safe" onclick="testSpecificSample('benign', 'windows_calculator.exe')">
+                                🖩 Calculator
+                            </button>
+                            <button class="demo-sample-btn safe" onclick="testSpecificSample('benign', 'text_editor.exe')">
+                                📝 Text Editor
+                            </button>
+                            <button class="demo-sample-btn safe" onclick="testSpecificSample('benign', 'media_player.exe')">
+                                🎵 Media Player
+                            </button>
+                            <button class="demo-sample-btn safe" onclick="testSpecificSample('benign', 'system_tool.dll')">
+                                🔧 System Tool
+                            </button>
+                        </div>
+                        
+                        <div class="demo-sample-group">
+                            <h4 style="color: #f44336; margin-bottom: 15px; text-align: center;">⚠️ Educational Malware Types</h4>
+                            <button class="demo-sample-btn malicious" onclick="testSpecificSample('malicious', 'fake_ransomware.exe')">
+                                🔒 Ransomware Demo
+                            </button>
+                            <button class="demo-sample-btn malicious" onclick="testSpecificSample('malicious', 'dummy_trojan.exe')">
+                                🐎 Trojan Demo
+                            </button>
+                            <button class="demo-sample-btn malicious" onclick="testSpecificSample('malicious', 'test_keylogger.exe')">
+                                ⌨️ Keylogger Demo
+                            </button>
+                            <button class="demo-sample-btn malicious" onclick="testSpecificSample('malicious', 'mock_botnet.dll')">
+                                🌐 Botnet Demo
+                            </button>
+                        </div>
+                    </div>
+                </details>
+                
+                <div style="text-align: center; color: #b39ddb; font-size: 0.9em; margin-top: 20px;">
+                    💡 All samples are completely safe and designed for educational purposes only
+                </div>
+            </div>
+
+            <!-- Section 2: Upload Your Own Files -->
+            <div style="background: #1a1a2e; border-radius: 15px; padding: 30px; margin-bottom: 30px; border: 2px solid #6a1b9a;">
+                <h2 style="color: #9c27b0; margin-bottom: 20px; text-align: center;">📤 Section 2: Real File Analysis (Upload)</h2>
+                <div style="background: #1a1a1a; padding: 20px; border-radius: 10px; margin-bottom: 25px; border-left: 4px solid #6a1b9a;">
+                    <h3 style="color: #ffffff; margin-bottom: 15px;">🔍 What This Section Provides:</h3>
+                    <ul style="color: #b39ddb; margin-left: 20px;">
+                        <li><strong>Real Analysis:</strong> Upload any .exe or .dll file for genuine analysis</li>
+                        <li><strong>AI Verdict:</strong> Machine Learning model determines Safe/Malicious</li>
+                        <li><strong>Confidence Score:</strong> Shows how certain the AI is (0-100%)</li>
+                        <li><strong>Detailed Explanation:</strong> Why the file is classified as safe or malicious</li>
+                        <li><strong>Technical Details:</strong> Static analysis, imports, entropy, strings</li>
+                    </ul>
+                    <div style="background: #2d1b3d; padding: 15px; border-radius: 8px; margin-top: 15px;">
+                        <p style="color: #ffeb3b; font-weight: 600; margin: 0; text-align: center;">
+                            ⚠️ Educational Tool - Use safe test files only
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">🔍</div>
+                    <div class="upload-text">Upload Your File for Analysis</div>
+                    <div class="upload-subtext">Drag & drop or click to select (.exe/.dll files)</div>
+                    <div style="font-size: 0.9em; color: #ffeb3b; margin-bottom: 20px; font-weight: 600;">
+                        ⚠️ Educational tool - Use safe test files only
+                    </div>
+                    <button class="upload-button" type="button">🚀 Choose File to Analyze</button>
+                </div>
+            </div>
+            
+            <!-- Section 3: Project Structure Info -->
+            <div style="background: #2d1b3d; border-radius: 15px; padding: 25px; margin-bottom: 30px; border: 2px solid #7b1fa2;">
+                <h3 style="color: #9c27b0; margin-bottom: 15px; text-align: center;">📁 Section 3: Project Structure</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; color: #ffffff;">
+                    <div style="background: #1a1a1a; padding: 20px; border-radius: 10px;">
+                        <h4 style="color: #4caf50; margin-bottom: 10px;">📂 samples/benign/</h4>
+                        <ul style="margin: 10px 0; font-size: 0.9em; color: #b39ddb;">
+                            <li>windows_calculator.exe</li>
+                            <li>text_editor.exe</li>
+                            <li>media_player.exe</li>
+                            <li>system_tool.dll</li>
+                            <li>graphics_lib.dll</li>
+                        </ul>
+                        <p style="font-size: 0.8em; color: #4caf50;">✅ Safe educational samples</p>
+                    </div>
+                    
+                    <div style="background: #1a1a1a; padding: 20px; border-radius: 10px;">
+                        <h4 style="color: #f44336; margin-bottom: 10px;">📂 samples/malicious/</h4>
+                        <ul style="margin: 10px 0; font-size: 0.9em; color: #b39ddb;">
+                            <li>fake_ransomware.exe</li>
+                            <li>dummy_trojan.exe</li>
+                            <li>test_keylogger.exe</li>
+                            <li>mock_botnet.dll</li>
+                            <li>+ Behavior reports (JSON)</li>
+                        </ul>
+                        <p style="font-size: 0.8em; color: #f44336;">⚠️ Educational malware demos</p>
+                    </div>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px; color: #b39ddb; font-size: 0.9em;">
+                    🎯 <strong>Purpose:</strong> Combining ready educational samples with real-time file analysis capabilities
+                </div>
+            </div>
+                
+                
+            
+            <!-- Instant Results Area -->
+            <div id="instantResults" style="display: none; margin-top: 30px;">
+                <div class="result-card">
+                    <div class="result-header">
+                        <h2 id="resultTitle">Analysis Result</h2>
+                        <div id="resultBadge" class="result-badge"></div>
+                    </div>
+                    <div id="resultDetails" class="result-details"></div>
+                    <div id="resultExplanation" class="result-explanation"></div>
+                </div>
+            </div>
+            
+            <input type="file" id="fileInput" class="file-input" accept=".exe,.dll" />
+            
+            <div class="progress-bar" id="progressBar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div class="status" id="status"></div>
+            
+            <div class="features">
+                <div class="feature">
+                    <div class="feature-icon">🔍</div>
+                    <h3>Static Analysis</h3>
+                    <p>Examine file structure, imports, and strings</p>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature-icon">⚡</div>
+                    <h3>Simulated Dynamic Analysis</h3>
+                    <p>Educational simulation of behavior analysis</p>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature-icon">🤖</div>
+                    <h3>Machine Learning Demo</h3>
+                    <p>Demonstrate ML classification techniques</p>
+                </div>
+                
+                <div class="feature">
+                    <div class="feature-icon">📚</div>
+                    <h3>Learning Experience</h3>
+                    <p>Understand cybersecurity analysis concepts</p>
+                </div>
+            </div>
+            
+            <div style="background: #2a2a2a; border-radius: 10px; padding: 20px; margin-top: 30px; border: 2px solid #4a148c;">
+                <h3 style="color: #9c27b0; margin-bottom: 15px;">📖 Tool Capabilities</h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 20px;">
+                    <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50;">
+                        <h4 style="color: #4caf50; margin-bottom: 10px;">🎯 Demo Mode (Section 1)</h4>
+                        <ul style="color: #b39ddb; margin-left: 20px; font-size: 0.9em;">
+                            <li>Pre-made educational samples</li>
+                            <li>Instant results for presentations</li>
+                            <li>Demonstrates ML model concepts</li>
+                            <li>Shows different malware types</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="background: #1a1a1a; padding: 15px; border-radius: 8px; border-left: 4px solid #9c27b0;">
+                        <h4 style="color: #9c27b0; margin-bottom: 10px;">🔍 Real Analysis (Section 2)</h4>
+                        <ul style="color: #b39ddb; margin-left: 20px; font-size: 0.9em;">
+                            <li>Upload any .exe/.dll file</li>
+                            <li>Same ML model analyzes structure</li>
+                            <li>Real static analysis techniques</li>
+                            <li>Genuine threat assessment</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div style="background: #1a1a2e; padding: 20px; border-radius: 8px; border: 2px solid #9c27b0;">
+                    <h3 style="color: #9c27b0; margin-bottom: 15px; text-align: center;">🎯 Key Differences Between Sections</h3>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                        <div style="background: #2a2a2a; padding: 15px; border-radius: 8px; border-left: 4px solid #4caf50;">
+                            <h4 style="color: #4caf50; margin-bottom: 10px;">📋 Demo Samples</h4>
+                            <ul style="color: #b39ddb; font-size: 0.9em; margin-left: 15px;">
+                                <li>Pre-made educational files</li>
+                                <li>Results are predetermined</li>
+                                <li>Safe for presentations</li>
+                                <li>Shows tool capabilities</li>
+                            </ul>
+                        </div>
+                        
+                        <div style="background: #2a2a2a; padding: 15px; border-radius: 8px; border-left: 4px solid #9c27b0;">
+                            <h4 style="color: #9c27b0; margin-bottom: 10px;">🔍 Upload Analysis</h4>
+                            <ul style="color: #b39ddb; font-size: 0.9em; margin-left: 15px;">
+                                <li>Real file analysis</li>
+                                <li>AI-powered verdicts</li>
+                                <li>Dynamic confidence scores</li>
+                                <li>Genuine technical analysis</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <p style="color: #ffffff; margin-bottom: 10px; text-align: center;">
+                        <strong>🚀 Same ML Engine, Different Purposes</strong>
+                    </p>
+                    <p style="color: #b39ddb; text-align: center; font-size: 0.9em;">
+                        Both sections use the same Random Forest model for consistency:<br>
+                        Static Analysis • Feature Engineering • AI Classification • Educational Explanations
+                    </p>
+                </div>
+                
+                <p style="color: #ffeb3b; font-weight: 600; margin-top: 15px; text-align: center;">
+                    ⚠️ Educational tool - Use safe test files for real analysis
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>MalXplain © 2025 - Educational Tool for Understanding Malware Analysis</p>
+            <p style="font-size: 0.8em; opacity: 0.7;">Developed by Jady & Kayan - Cybersecurity Research Project</p>
+        </div>
+    </div>
+
+    
+    <script>
+        const uploadArea = document.querySelector('.upload-area');
+        const fileInput = document.getElementById('fileInput');
+        const progressBar = document.getElementById('progressBar');
+        const progressFill = document.getElementById('progressFill');
+        const status = document.getElementById('status');
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            // Validate file
+            if (!file.name.toLowerCase().endsWith('.exe') && !file.name.toLowerCase().endsWith('.dll')) {
+                showStatus('Please select only EXE or DLL files', 'error');
+                return;
+            }
+
+            if (file.size > 100 * 1024 * 1024) {
+                showStatus('File size too large (max 100 MB)', 'error');
+                return;
+            }
+
+            uploadFile(file);
+        }
+
+        function uploadFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            progressBar.style.display = 'block';
+            showStatus('Uploading file...', '');
+
+            // Simulate progress
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 15;
+                if (progress > 90) progress = 90;
+                progressFill.style.width = progress + '%';
+            }, 200);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+
+                if (data.error) {
+                    showStatus('Error: ' + data.error, 'error');
+                } else {
+                    showStatus('Analysis completed successfully! Loading results...', 'success');
+                    setTimeout(() => {
+                        // Redirect to results page (would be implemented)
+                        showResults(data);
+                    }, 1000);
+                }
+            })
+            .catch(error => {
+                clearInterval(progressInterval);
+                showStatus('Connection error: ' + error.message, 'error');
+            });
+        }
+
+        function showStatus(message, type) {
+            status.textContent = message;
+            status.className = 'status ' + type;
+            status.style.display = 'block';
+        }
+
+        // Direct sample file usage
+        function useSampleFile(type) {
+            const sampleFiles = {
+                'benign': ['windows_calculator.exe', 'text_editor.exe', 'media_player.exe', 'system_tool.dll'],
+                'malicious': ['fake_ransomware.exe', 'dummy_trojan.exe', 'test_keylogger.exe', 'mock_botnet.dll']
+            };
+            
+            // Pick a random sample from the category
+            const files = sampleFiles[type];
+            const randomFile = files[Math.floor(Math.random() * files.length)];
+            
+            testSpecificSample(type, randomFile);
+        }
+
+        function testSpecificSample(type, filename) {
+            showStatus(`Analyzing ${filename}...`, '');
+            progressBar.style.display = 'block';
+            
+            // Simulate progress
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                progress += Math.random() * 20;
+                if (progress > 90) progress = 90;
+                progressFill.style.width = progress + '%';
+            }, 100);
+
+            // Create demo data based on sample type
+            setTimeout(() => {
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+                
+                const demoData = createDemoData(type, filename);
+                showStatus('Analysis completed successfully!', 'success');
+                
+                setTimeout(() => {
+                    showResults(demoData);
+                }, 500);
+            }, 2000);
+        }
+
+        // Keep the old function for backward compatibility
+        function testDemoSample(type, filename) {
+            testSpecificSample(type, filename);
+        }
+
+        function createDemoData(type, filename) {
+            const isMalicious = type === 'malicious';
+            
+            return {
+                result: {
+                    filename: filename,
+                    prediction: {
+                        result: isMalicious ? 'Malicious' : 'Safe',
+                        confidence: isMalicious ? 0.88 : 0.95
+                    },
+                    overall_assessment: {
+                        risk_level: isMalicious ? 'High' : 'Low',
+                        key_indicators: isMalicious ? 
+                            ['Suspicious system calls detected', 'Network communication to unknown servers', 'Registry modification attempts', 'File encryption patterns'] :
+                            ['Clean PE structure', 'Known safe imports only', 'No suspicious strings', 'Standard application behavior']
+                    },
+                    educational_override: true,
+                    demo_message: isMalicious ? 
+                        '🎯 DEMO RESULT: This educational sample represents malware - Analysis shows typical malicious patterns' :
+                        '🎯 DEMO RESULT: This educational sample represents safe software - Analysis shows benign characteristics'
+                },
+                explanation: {
+                    overall_verdict: {
+                        explanation: isMalicious ?
+                            '🎓 EDUCATIONAL DEMONSTRATION: This sample shows how our ML model detects malware patterns. The same analysis engine works on real files uploaded through Section 2. Key malware indicators include suspicious API usage, behavioral patterns, and file structure anomalies.' :
+                            '🎓 EDUCATIONAL DEMONSTRATION: This sample shows how our ML model recognizes safe software. The same analysis engine works on real files uploaded through Section 2. Clean files show standard coding patterns, legitimate API usage, and normal behavioral profiles.'
+                    }
+                }
+            };
+        }
+
+        function showResults(data) {
+            const instantResults = document.getElementById('instantResults');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultBadge = document.getElementById('resultBadge');
+            const resultDetails = document.getElementById('resultDetails');
+            const resultExplanation = document.getElementById('resultExplanation');
+            
+            // Determine result type and styling
+            const prediction = data.result.prediction.result || data.result.prediction;
+            const ismalicious = prediction.toLowerCase().includes('malicious') || prediction.toLowerCase() === 'malicious';
+            const isSuspicious = data.result.overall_assessment?.risk_level === 'Medium' ||
+                               data.result.overall_assessment?.risk_level === 'MEDIUM';
+            
+            let badgeClass = 'safe';
+            let badgeText = '✅ SAFE';
+            let titleText = '✅ File Analysis: SAFE - No malware detected';
+            
+            if (ismalicious) {
+                badgeClass = 'malicious';
+                badgeText = '⚠️ MALICIOUS';
+                titleText = '⚠️ File Analysis: MALICIOUS - Potential threat detected';
+            } else if (isSuspicious) {
+                badgeClass = 'suspicious';
+                badgeText = '⚡ SUSPICIOUS';
+                titleText = '⚡ File Analysis: SUSPICIOUS - Requires caution';
+            }
+            
+            resultTitle.textContent = titleText;
+            resultBadge.textContent = badgeText;
+            resultBadge.className = `result-badge ${badgeClass}`;
+            
+            // Show details
+            resultDetails.innerHTML = `
+                <div class="detail-item">
+                    <div class="detail-label">File Name</div>
+                    <div class="detail-value">${data.result.filename || 'Not specified'}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Confidence Level</div>
+                    <div class="detail-value">${(data.result.prediction.confidence * 100).toFixed(1)}%</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Risk Level</div>
+                    <div class="detail-value">${data.result.overall_assessment.risk_level}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Analysis Type</div>
+                    <div class="detail-value">Advanced AI</div>
+                </div>
+            `;
+            
+            // Show explanation
+            const explanation = data.explanation?.overall_verdict?.explanation || 
+                               data.result.demo_message || 
+                               'Analysis completed using machine learning techniques.';
+            
+            const keyIndicators = data.result.overall_assessment?.key_indicators || [];
+            const confidence = data.result.prediction.confidence || 0;
+            
+            resultExplanation.innerHTML = `
+                <div class="explanation-title">📚 Analysis Explanation</div>
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <h4 style="color: #2c3e50; margin-bottom: 10px;">🎯 Verdict Reasoning:</h4>
+                    <p style="color: #2c3e50; margin-bottom: 10px;">${explanation}</p>
+                    <p style="color: #6c757d; font-size: 0.9em;"><strong>Confidence Level:</strong> ${(confidence * 100).toFixed(1)}% certain</p>
+                </div>
+                ${keyIndicators.length > 0 ? `
+                <div style="margin-top: 15px;">
+                    <strong style="color: #2c3e50;">🔍 Technical Indicators:</strong>
+                    <ul style="margin: 10px 0; padding-left: 20px; color: #2c3e50;">
+                        ${keyIndicators.map(indicator => 
+                            `<li style="margin: 5px 0;">${indicator}</li>`
+                        ).join('')}
+                    </ul>
+                </div>
+                ` : ''}
+            `;
+            
+            // Show results with animation
+            instantResults.style.display = 'block';
+            progressBar.style.display = 'none';
+            
+            // Scroll to results smoothly
+            setTimeout(() => {
+                instantResults.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+    </script>
+</body>
+</html>

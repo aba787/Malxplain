@@ -1,0 +1,45 @@
+{
+  "filename": "banking_demo.exe",
+  "analysis_type": "educational_demo",
+  "static_analysis": {
+    "entropy": 6.9,
+    "imports": [
+      "InternetOpen",
+      "HttpSendRequest",
+      "RegCreateKey"
+    ],
+    "suspicious_strings": [
+      "password",
+      "bank",
+      "credential"
+    ],
+    "packed": false
+  },
+  "dynamic_analysis": {
+    "behavior_score": 78,
+    "network_activity": {
+      "tcp_connections": [
+        {
+          "destination": "phishing-site.example",
+          "port": 80
+        }
+      ],
+      "http_requests": [
+        {
+          "url": "http://evil.com/steal",
+          "method": "POST"
+        }
+      ]
+    },
+    "registry_changes": {
+      "keys_created": [
+        "HKCU\\Software\\BankingTrojan"
+      ]
+    }
+  },
+  "prediction": {
+    "result": "Malicious",
+    "confidence": 0.87,
+    "model": "educational_demo"
+  }
+}
