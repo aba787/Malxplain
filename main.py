@@ -158,7 +158,8 @@ def use_sample(sample_type):
             'purpose': 'Demonstration of malware analysis techniques',
             'file_type': 'Educational sample - completely safe',
             'sample_category': sample_type
-        }ٍ
+            }
+
         
         # Analyze the sample
         result = prediction_engine.analyze_file(filepath)
